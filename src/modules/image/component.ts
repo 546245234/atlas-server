@@ -14,7 +14,7 @@ export function createImageComponent(components: {
       case TileType.DISTRICT:
         return '#5054D4'
       case TileType.PLAZA:
-        return '#70AC76'
+        return '#2b7de1'
       case TileType.ROAD:
         return '#716C7A'
       case TileType.OWNED:

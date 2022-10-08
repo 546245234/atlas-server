@@ -37,11 +37,11 @@ export async function createMapComponent(components: {
   let ready = false
   let lastUpdatedAt = 0
 
-  // sort
+  // sort 对方块排序，x坐标小的排前面，y坐标大的排前面
   const sortByCoords = (a: Tile, b: Tile) =>
     a.x < b.x ? -1 : a.x > b.x ? 1 : a.y > b.y ? -1 : 1 // sort from left to right, from top to bottom
 
-  // methods
+  // methods 添加方块
   function addTiles(newTiles: Tile[], oldTiles: Record<string, Tile>) {
     // mutations ahead (for performance reasons)
     for (const tile of newTiles.sort(sortByCoords)) {
@@ -50,7 +50,7 @@ export async function createMapComponent(components: {
     }
     return oldTiles
   }
-
+  //添加地皮
   function addParcels(newParcels: NFT[], oldParcels: Record<string, NFT>) {
     for (const parcel of newParcels) {
       const xAttr = parcel.attributes.find(
@@ -71,6 +71,7 @@ export async function createMapComponent(components: {
 
     return oldParcels
   }
+  //添加房地产
   function addEstates(newEstates: NFT[], oldEstates: Record<string, NFT>) {
     for (const estate of newEstates) {
       oldEstates[estate.id] = estate

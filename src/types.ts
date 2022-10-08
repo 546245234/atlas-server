@@ -10,7 +10,6 @@ import {
   IMetricsComponent,
 } from '@well-known-components/interfaces'
 import { metricDeclarations } from './metrics'
-import { MiniMapRendererComponent } from './adapters/mini-map-renderer'
 
 export type GlobalContext = {
   components: BaseComponents
@@ -27,8 +26,6 @@ export type BaseComponents = {
   image: IImageComponent
   district: IDistrictComponent
   metrics: IMetricsComponent<keyof typeof metricDeclarations>
-  renderMiniMap: MiniMapRendererComponent
-  renderEstateMiniMap: MiniMapRendererComponent
 }
 
 // production components
@@ -38,5 +35,3 @@ export type AppComponents = BaseComponents & {
 
 // test environment components
 export type TestComponents = BaseComponents & {}
-
-export type Context<Path extends string = any> = IHttpServerComponent.PathAwareContext<GlobalContext, Path>

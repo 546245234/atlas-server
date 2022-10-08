@@ -87,13 +87,14 @@ export async function createApiComponent(components: {
 
     // auxiliars for fetching in batches
 
-    let batches: Promise<Batch>[] = []
+    let batches: Promise<Batch>[] = []//请求的集合，控制并发量
     let total = 0
     let complete = false
     let lastTokenId = ''
-
+    //起服务的耗时主要在这里
+    //请求SUBGRAPH_URL
     while (!complete) {
-      // fetch batch
+      // fetch batch 
       const batch = fetchBatch(lastTokenId, batches.length).then((batch) => {
         // merge results
         for (const tile of batch.tiles) {
@@ -106,7 +107,7 @@ export async function createApiComponent(components: {
           estates.push(estate)
         }
 
-        // notify progress
+        // notify progress 这里是其服务打印出来的东西
         total = total + batch.tiles.length
         const progress = ((total / 90601) * 100) | 0 // there are 301x301=90601 parcels in the world
         events.emit(ApiEvents.PROGRESS, Math.min(99, progress))
@@ -115,7 +116,7 @@ export async function createApiComponent(components: {
         return batch
       })
 
-      // when max concurrency is reached...
+      // when max concurrency is reached...当达到最大并发量
       batches.push(batch)
       if (batches.length === Math.max(concurrency, 1)) {
         // ...wait for all the batches to finish
