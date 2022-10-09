@@ -11,19 +11,20 @@ export function createImageComponent(components: {
 
   function getColor(tile: Tile) {
     switch (tile.type) {
-      case TileType.DISTRICT:
+      case TileType.DISTRICT://区
         return '#5054D4'
-      case TileType.PLAZA:
-        return '#2b7de1'
-      case TileType.ROAD:
+      case TileType.PLAZA://广场
+        return '#70AC76'
+        // return '#2b7de1'//自定义广场
+      case TileType.ROAD://路
         return '#716C7A'
-      case TileType.OWNED:
+      case TileType.OWNED: //被拥有，一般地图多数为owned
         return '#3D3A46'
       case TileType.UNOWNED:
         return '#09080A'
     }
   }
-
+  //返回图片流数据
   async function getStream(
     width: number,
     height: number,
@@ -37,12 +38,12 @@ export function createImageComponent(components: {
     const canvas = createCanvas(width, height)
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
     const tiles = await map.getTiles()
-    const layer: Layer = (x, y) => {
+    const layer: Layer = (x, y) => { //通过传入方块的坐标生成result，result有color属性
       const id = coordsToId(x, y)
       const tile = tiles[id]
       const result = tile
         ? {
-          color: showOnSale && tile.price && !isExpired(tile) ? '#1FBCFF' : getColor(tile),
+          color: showOnSale && tile.price && !isExpired(tile) ? '#1FBCFF' : getColor(tile),//color是方块显示的颜色
           top: tile.top,
           left: tile.left,
           topLeft: tile.topLeft,
@@ -80,7 +81,7 @@ export function createImageComponent(components: {
       center,
       nw,
       se,
-      layers,
+      layers,//包含了多个方法，用于生成不同颜色块信息的对象
     })
     return canvas.createPNGStream()
   }

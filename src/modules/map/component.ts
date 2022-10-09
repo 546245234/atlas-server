@@ -117,6 +117,7 @@ export async function createMapComponent(components: {
     async start() {
       events.emit(MapEvents.INIT)
       try {
+        //初始化
         const result = await batchApi.fetchData()
         lastUpdatedAt = result.updatedAt
         tiles.resolve(addSpecialTiles(addTiles(result.tiles, {})))

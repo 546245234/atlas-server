@@ -1,6 +1,9 @@
 import * as nodeFetch from 'node-fetch'
 import { createDotEnvConfigComponent } from '@well-known-components/env-config-provider'
-import { createMetricsComponent } from '@well-known-components/metrics'
+import {
+  createMetricsComponent,
+  instrumentHttpServerWithMetrics,
+} from '@well-known-components/metrics'
 import {
   createServerComponent,
   createStatusCheckComponent,
@@ -14,6 +17,7 @@ import { createImageComponent } from './modules/image/component'
 import { createMapComponent } from './modules/map/component'
 import { AppComponents, GlobalContext } from './types'
 import { metricDeclarations } from './metrics'
+import { createEstatesRendererComponent, createMiniMapRendererComponent } from './adapters/mini-map-renderer'
 
 export async function initComponents(): Promise<AppComponents> {
   const config = await createDotEnvConfigComponent(
@@ -28,7 +32,10 @@ export async function initComponents(): Promise<AppComponents> {
   const subgraphURL = await config.requireString('SUBGRAPH_URL')
 
   const fetch: IFetchComponent = { fetch: nodeFetch.default }
-  const logs = createLogComponent()
+  const metrics = await createMetricsComponent(metricDeclarations, {
+    config,
+  })
+  const logs = await createLogComponent({ metrics })
   const batchLogs = {
     getLogger(name: string) {
       const logger = logs.getLogger(name)
@@ -39,12 +46,10 @@ export async function initComponents(): Promise<AppComponents> {
 
   const server = await createServerComponent<GlobalContext>(
     { config, logs },
-    { cors, compression: {} }
+    { cors }
   )
-  const metrics = await createMetricsComponent(metricDeclarations, {
-    server,
-    config,
-  })
+
+  await instrumentHttpServerWithMetrics({ metrics, server, config })
   const subgraph = await createSubgraphComponent(
     { config, logs, fetch, metrics },
     subgraphURL
@@ -55,12 +60,15 @@ export async function initComponents(): Promise<AppComponents> {
   )
   const api = await createApiComponent({ config, subgraph })
   const batchApi = await createApiComponent({ config, subgraph: batchSubgraph })
+  //初始化地图，获取所有tile和其他数据，生成一个map对象，挂载了多个map数据相关的方法
   const map = await createMapComponent({ config, api, batchApi })
   const image = createImageComponent({ map })
   //从district文件夹下的data获取数据，表示每个建筑占地面积和拥有者地址还有名称
   //包含getDistricts，getDistrict，getContributionsByAddress
   const district = createDistrictComponent()
   const statusChecks = await createStatusCheckComponent({ server, config })
+  const renderMiniMap = await createMiniMapRendererComponent({ map })
+  const renderEstateMiniMap = await createEstatesRendererComponent({ map })
 
   return {
     config,
@@ -74,5 +82,7 @@ export async function initComponents(): Promise<AppComponents> {
     image,
     district,
     statusChecks,
+    renderMiniMap,
+    renderEstateMiniMap
   }
 }

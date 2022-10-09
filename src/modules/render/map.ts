@@ -14,7 +14,7 @@ export function renderMap(args: {
 }) {
   const { ctx, width, height, size, pan, nw, se, center, layers } = args
 
-  ctx.fillStyle = '#18141a'
+  ctx.fillStyle = '#18141a'//地图背景颜色,方块之间的缝隙颜色
   ctx.fillRect(0, 0, width, height)
 
   const halfWidth = width / 2
@@ -36,7 +36,7 @@ export function renderMap(args: {
 
         renderTile({
           ctx,
-          x: halfWidth - offsetX + halfSize,
+          x: halfWidth - offsetX + halfSize,//根据center计算出偏移后的坐标
           y: halfHeight - offsetY + halfSize,
           size,
           padding: size < 7 ? 0.5 : size < 12 ? 1 : size < 18 ? 1.5 : 2,

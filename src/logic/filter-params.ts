@@ -10,13 +10,13 @@ type FilterQuery = {
 }
 
 const validFields = new Set(tileFields)
-
+//根据url参数返回合适的tiles方块组
 export function getFilterFromUrl(
   url: URL,
   tiles: Record<string, Tile>
 ): Record<string, Partial<Tile>> {
-  let result: Record<string, Partial<Tile>> = tiles
-
+  let result: Record<string, Partial<Tile>> = tiles//方块组
+  //获取url参数
   // filter by coords
   const x1 = url.searchParams.get('x1')
   const x2 = url.searchParams.get('x2')
@@ -24,7 +24,7 @@ export function getFilterFromUrl(
   const y2 = url.searchParams.get('y2')
   const include = url.searchParams.get('include')
   const exclude = url.searchParams.get('exclude')
-
+  //+x1表示转换成number类型
   if (
     x1 &&
     x2 &&
@@ -52,7 +52,7 @@ export function getFilterFromUrl(
       }
     }
   }
-
+  //根据include和exclude筛选tile的字段
   // include fields
   if (include) {
     const fieldsToInclude = include

@@ -1,4 +1,4 @@
-import { AppComponents } from '../types'
+import { AppComponents, Context } from '../types'
 import { toLegacyTiles } from '../adapters/legacy-tiles'
 import { cacheWrapper } from '../logic/cache-wrapper'
 import { extractParams, getFilterFromUrl } from '../logic/filter-params'
@@ -7,13 +7,13 @@ export const createTilesRequestHandler = (
   components: Pick<AppComponents, 'map'>
 ) => {
   const { map } = components
-  return cacheWrapper(
+  return cacheWrapper(//缓存请求
     async (context: { url: URL }) => {
-      if (!map.isReady()) {
+      if (!map.isReady()) {//需要等地图下载完毕
         return { status: 503, body: 'Not ready' }
       }
-      const tiles = await map.getTiles()
-      const data = getFilterFromUrl(context.url, tiles)
+      const tiles = await map.getTiles()//获取所有方块
+      const data = getFilterFromUrl(context.url, tiles)//根据url参数返回合适的tiles方块组
 
       return {
         status: 200,
@@ -51,6 +51,60 @@ export const createLegacyTilesRequestHandler = (
   )
 }
 
+export async function miniMapHandler(context: Context) {
+  const { renderMiniMap, map, metrics } = context.components
+  //metrics.ts指标文件
+  const timer = metrics.startTimer('dcl_mini_map_render_time')
+  try {
+    if (!map.isReady()) {
+      return { status: 503, body: 'Not ready' }
+    }
+    const stream = await renderMiniMap.getStream()
+    timer.end({ status: 200 })
+    return {
+      status: 200,
+      headers: {
+        'content-type': 'image/png',
+        'cache-control': 'public,s-maxage=600,max-age=600',
+      },
+      body: stream,
+    }
+  } catch (error) {
+    timer.end({ status: 500 })
+    return {
+      status: 500,
+      body: { ok: false, error: error.message },
+    }
+  }
+}
+
+export async function estateMapHandler(context: Context) {
+  const { renderEstateMiniMap, map, metrics } = context.components
+  const timer = metrics.startTimer('dcl_mini_map_render_time')
+  try {
+    if (!map.isReady()) {
+      return { status: 503, body: 'Not ready' }
+    }
+    const stream = await renderEstateMiniMap.getStream()
+    timer.end({ status: 200 })
+    return {
+      status: 200,
+      headers: {
+        'content-type': 'image/png',
+        'cache-control': 'public,s-maxage=600,max-age=600',
+      },
+      body: stream,
+    }
+  } catch (error) {
+    timer.end({ status: 500 })
+    return {
+      status: 500,
+      body: { ok: false, error: error.message },
+    }
+  }
+}
+//根据url参数生成对应的map图片
+///v1/map.png?center=23,-23&selected=23,-23&size=20&width
 export const mapPngRequestHandler = async (context: {
   components: Pick<AppComponents, 'image' | 'map' | 'metrics'>
   url: URL
@@ -89,6 +143,8 @@ export const mapPngRequestHandler = async (context: {
   }
 }
 
+///v1/parcels/:x/:y/map.png, 通过传入具体需要选中方块的坐标，返回一个选中方块居中显示
+//的图片
 export const parcelMapPngRequestHandler = async (context: {
   components: Pick<AppComponents, 'image' | 'map'>
   params: {

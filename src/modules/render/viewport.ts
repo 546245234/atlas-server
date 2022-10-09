@@ -3,9 +3,9 @@ import { Coord } from './types'
 export type Viewport = {
   width: number
   height: number
-  nw: Coord
-  se: Coord
-  area: number
+  nw: Coord //左上角坐标
+  se: Coord //右下角坐标
+  area: number //面积
 }
 
 export function getViewport(args: {
