@@ -1,5 +1,6 @@
 import { renderTile } from './tile'
 import { Coord, Layer } from './types'
+import { renderAvatars } from './avatars'
 
 export function renderMap(args: {
   ctx: CanvasRenderingContext2D
@@ -23,7 +24,7 @@ export function renderMap(args: {
   for (const layer of layers) {
     for (let x = nw.x; x < se.x; x++) {
       for (let y = se.y; y < nw.y; y++) {
-        const offsetX = (center.x - x) * size + (pan ? pan.x : 0)
+        const offsetX = (center.x - x) * size + (pan ? pan.x : 0) //坐标距离中心点的距离
         const offsetY = (y - center.y) * size + (pan ? pan.y : 0)
 
         const tile = layer(x, y)
@@ -36,7 +37,7 @@ export function renderMap(args: {
 
         renderTile({
           ctx,
-          x: halfWidth - offsetX + halfSize,//根据center计算出偏移后的坐标
+          x: halfWidth - offsetX + halfSize, //这里的x坐标是canvas的x坐标，canvas原点为左上角，往右和往下为正
           y: halfHeight - offsetY + halfSize,
           size,
           padding: size < 7 ? 0.5 : size < 12 ? 1 : size < 18 ? 1.5 : 2,
@@ -50,4 +51,6 @@ export function renderMap(args: {
       }
     }
   }
+
+  renderAvatars({ctx, width, height, size, pan, nw, se, center})
 }

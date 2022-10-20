@@ -69,7 +69,7 @@ export async function miniMapHandler(context: Context) {
       },
       body: stream,
     }
-  } catch (error) {
+  } catch (error:any) {
     timer.end({ status: 500 })
     return {
       status: 500,
@@ -95,7 +95,7 @@ export async function estateMapHandler(context: Context) {
       },
       body: stream,
     }
-  } catch (error) {
+  } catch (error:any) {
     timer.end({ status: 500 })
     return {
       status: 500,
@@ -134,7 +134,7 @@ export const mapPngRequestHandler = async (context: {
       },
       body: stream,
     }
-  } catch (error) {
+  } catch (error:any) {
     timer.end({ status: 500 })
     return {
       status: 500,
@@ -180,7 +180,7 @@ export const parcelMapPngRequestHandler = async (context: {
       },
       body: stream,
     }
-  } catch (error) {
+  } catch (error:any) {
     return {
       status: 500,
       body: { ok: false, error: error.message },
@@ -233,7 +233,7 @@ export const estateMapPngRequestHandler = async (context: {
       },
       body: stream,
     }
-  } catch (error) {
+  } catch (error:any) {
     return {
       status: 500,
       body: { ok: false, error: error.message },

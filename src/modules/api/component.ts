@@ -16,6 +16,8 @@ import {
 } from './types'
 import { isExpired, getProximity, capitalize, buildFromEstates } from './utils'
 import { coordsToId, specialTiles } from '../map/utils'
+import fs from 'fs'
+import path from 'path'
 
 const parcelFields = `{
   name
@@ -86,77 +88,88 @@ export async function createApiComponent(components: {
     const estates: NFT[] = []
 
     // auxiliars for fetching in batches
+    try {
+      fs.accessSync(path.resolve(__dirname, './data/result.json'))
+      const data = fs.readFileSync(path.resolve(__dirname, './data/result.json'), { encoding: 'utf8' })
+      events.emit(ApiEvents.PROGRESS, 100)
+      return JSON.parse(data)
+    } catch (error) {
+      let batches: Promise<Batch>[] = []//请求的集合，控制并发量
+      let total = 0
+      let complete = false
+      let lastTokenId = ''
+      //起服务的耗时主要在这里
+      //请求SUBGRAPH_URL
+      while (!complete) {
+        // fetch batch 
+        const batch = fetchBatch(lastTokenId, batches.length).then((batch) => {
+          // merge results
+          for (const tile of batch.tiles) {
+            tiles.push(tile)
+          }
+          for (const parcel of batch.parcels) {
+            parcels.push(parcel)
+          }
+          for (const estate of batch.estates) {
+            estates.push(estate)
+          }
 
-    let batches: Promise<Batch>[] = []//请求的集合，控制并发量
-    let total = 0
-    let complete = false
-    let lastTokenId = ''
-    //起服务的耗时主要在这里
-    //请求SUBGRAPH_URL
-    while (!complete) {
-      // fetch batch 
-      const batch = fetchBatch(lastTokenId, batches.length).then((batch) => {
-        // merge results
-        for (const tile of batch.tiles) {
-          tiles.push(tile)
+          // notify progress 这里是其服务打印出来的东西
+          total = total + batch.tiles.length
+          const progress = ((total / 90601) * 100) | 0 // there are 301x301=90601 parcels in the world
+          events.emit(ApiEvents.PROGRESS, Math.min(99, progress))
+
+          // resolve
+          return batch
+        })
+
+        // when max concurrency is reached...当达到最大并发量
+        batches.push(batch)
+        if (batches.length === Math.max(concurrency, 1)) {
+          // ...wait for all the batches to finish
+          const results = await Promise.all(batches)
+          // find last id
+          lastTokenId = results
+            .map((batch) => batch.tiles)
+            .filter((result) => result.length > 0)
+            .pop()!
+            .pop()!.tokenId!
+
+          // prepare next iteration
+          complete = results
+            .map((batch) => batch.tiles)
+            .some((result) => result.length === 0)
+          batches = []
         }
-        for (const parcel of batch.parcels) {
-          parcels.push(parcel)
-        }
-        for (const estate of batch.estates) {
-          estates.push(estate)
-        }
-
-        // notify progress 这里是其服务打印出来的东西
-        total = total + batch.tiles.length
-        const progress = ((total / 90601) * 100) | 0 // there are 301x301=90601 parcels in the world
-        events.emit(ApiEvents.PROGRESS, Math.min(99, progress))
-
-        // resolve
-        return batch
-      })
-
-      // when max concurrency is reached...当达到最大并发量
-      batches.push(batch)
-      if (batches.length === Math.max(concurrency, 1)) {
-        // ...wait for all the batches to finish
-        const results = await Promise.all(batches)
-        // find last id
-        lastTokenId = results
-          .map((batch) => batch.tiles)
-          .filter((result) => result.length > 0)
-          .pop()!
-          .pop()!.tokenId!
-
-        // prepare next iteration
-        complete = results
-          .map((batch) => batch.tiles)
-          .some((result) => result.length === 0)
-        batches = []
       }
-    }
 
-    // final progress update
-    events.emit(ApiEvents.PROGRESS, 100)
+      // final progress update
+      events.emit(ApiEvents.PROGRESS, 100)
 
-    const result: Result = {
-      tiles,
-      parcels,
-      // remove duplicates
-      estates: Array.from(
-        estates.reduce<Map<string, NFT>>(
-          (map, nft) => map.set(nft.id, nft),
-          new Map()
+      const result: Result = {
+        tiles,
+        parcels,
+        // remove duplicates
+        estates: Array.from(
+          estates.reduce<Map<string, NFT>>(
+            (map, nft) => map.set(nft.id, nft),
+            new Map()
+          ),
+          ([_key, value]) => value
         ),
-        ([_key, value]) => value
-      ),
-      updatedAt: tiles.reduce<number>(
-        (lastUpdatedAt, tile) => Math.max(lastUpdatedAt, tile.updatedAt),
-        0
-      ),
-    }
+        updatedAt: tiles.reduce<number>(
+          (lastUpdatedAt, tile) => Math.max(lastUpdatedAt, tile.updatedAt),
+          0
+        ),
+      }
 
-    return result
+      fs.writeFile(path.resolve(__dirname, "./data/result.json"), JSON.stringify(result), 'utf8', (err) => {
+        if (err) {
+          console.log(err)
+        }
+      })
+      return result
+    }
   }
 
   async function fetchBatch(lastTokenId = '', page = 0) {
@@ -281,7 +294,7 @@ export async function createApiComponent(components: {
       }
 
       return result
-    } catch (e) {
+    } catch (e: any) {
       throw new Error(`Failed to fetch update data: ${e.message}`)
     }
   }
@@ -321,8 +334,8 @@ export async function createApiComponent(components: {
       type: specialTile
         ? specialTile.type
         : owner
-        ? TileType.OWNED
-        : TileType.UNOWNED,
+          ? TileType.OWNED
+          : TileType.UNOWNED,
       top: specialTile ? specialTile.top : false,
       left: specialTile ? specialTile.left : false,
       topLeft: specialTile ? specialTile.topLeft : false,

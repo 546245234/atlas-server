@@ -1,4 +1,4 @@
-import { createCanvas } from 'canvas'
+import Canvas, { createCanvas } from 'canvas'
 import { Coord, Layer, getViewport, renderMap } from '../render'
 import { IMapComponent, Tile, TileType } from '../map/types'
 import { coordsToId, isExpired } from '../map/utils'
@@ -20,6 +20,7 @@ export function createImageComponent(components: {
         return '#716C7A'
       case TileType.OWNED: //被拥有，一般地图多数为owned
         return '#3D3A46'
+        // return '#ffffff'
       case TileType.UNOWNED:
         return '#09080A'
     }
@@ -44,9 +45,9 @@ export function createImageComponent(components: {
       const result = tile
         ? {
           color: showOnSale && tile.price && !isExpired(tile) ? '#1FBCFF' : getColor(tile),//color是方块显示的颜色
-          top: tile.top,
-          left: tile.left,
-          topLeft: tile.topLeft,
+          top: tile.top, //表示这个tile上面还有没有连接的tile
+          left: tile.left, //表示这个tile左边有没有连接的tile
+          topLeft: tile.topLeft, //表示这个tile左上方有没有连接的tile
         }
         : {
           color: (x + y) % 2 === 0 ? '#110e13' : '#0d0b0e',
